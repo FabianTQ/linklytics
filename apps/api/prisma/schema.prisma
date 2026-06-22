@@ -1,0 +1,58 @@
+// Linklytics data model.
+// Three tables: users, links, click_events. Click events are append-only and
+// drive the analytics aggregations (time series, referrers, geo).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  links Link[]
+
+  @@map("users")
+}
+
+model Link {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  originalUrl String   @map("original_url")
+  userId      String   @map("user_id") @db.Uuid
+  clickCount  Int      @default(0) @map("click_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clickEvents ClickEvent[]
+
+  @@index([userId])
+  @@map("links")
+}
+
+model ClickEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  linkId     String   @map("link_id") @db.Uuid
+  occurredAt DateTime @default(now()) @map("occurred_at")
+  referrer   String?
+  country    String?
+  city       String?
+  userAgent  String?  @map("user_agent")
+  // SHA-256 of the client IP — we never store raw IPs (privacy).
+  ipHash     String?  @map("ip_hash")
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@index([occurredAt])
+  @@map("click_events")
+}
