@@ -1,0 +1,13 @@
+{
+  "name": "@linklytics/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Linklytics web — Next.js. Scaffolded in Phase 3.",
+  "scripts": {
+    "build": "echo web: build placeholder - implemented in Phase 3",
+    "lint": "echo web: lint placeholder - implemented in Phase 3",
+    "typecheck": "echo web: typecheck placeholder - implemented in Phase 3",
+    "test": "echo web: test placeholder - implemented in Phase 3",
+    "clean": "echo web: nothing to clean yet"
+  }
+}

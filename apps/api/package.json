@@ -1,0 +1,13 @@
+{
+  "name": "@linklytics/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Linklytics API — NestJS. Scaffolded in Phase 2.",
+  "scripts": {
+    "build": "echo api: build placeholder - implemented in Phase 2",
+    "lint": "echo api: lint placeholder - implemented in Phase 2",
+    "typecheck": "echo api: typecheck placeholder - implemented in Phase 2",
+    "test": "echo api: test placeholder - implemented in Phase 2",
+    "clean": "echo api: nothing to clean yet"
+  }
+}
