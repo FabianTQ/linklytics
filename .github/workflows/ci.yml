@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  quality:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  api-tests:
+    name: API tests (Postgres + Redis service containers)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: linklytics
+          POSTGRES_PASSWORD: linklytics
+          POSTGRES_DB: linklytics_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U linklytics"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The test harness uses these instead of Testcontainers when present.
+      - name: Run API test suite (coverage gate)
+        run: pnpm --filter @linklytics/api test
+        env:
+          TEST_DATABASE_URL: postgresql://linklytics:linklytics@localhost:5432/linklytics_test?schema=public
+          TEST_REDIS_URL: redis://localhost:6379
+
+  web-e2e:
+    name: Web e2e (Playwright on the compose stack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start full stack
+        run: docker compose -f deploy/compose/docker-compose.yml up --build -d
+      - name: Install Playwright browser
+        run: pnpm --filter @linklytics/web exec playwright install --with-deps chromium
+      - name: Wait for web + api
+        run: |
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/ >/dev/null 2>&1 && break; sleep 2; done
+          for i in $(seq 1 60); do curl -fsS http://localhost:3001/healthz >/dev/null 2>&1 && break; sleep 2; done
+      - name: Run Playwright e2e
+        run: pnpm --filter @linklytics/web test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+      - name: Dump stack logs
+        if: always()
+        run: docker compose -f deploy/compose/docker-compose.yml logs --no-color > compose-logs.txt || true
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-debug
+          path: |
+            apps/web/playwright-report
+            compose-logs.txt
+          if-no-files-found: ignore
+
+  build-images:
+    name: Build images (no push)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          tags: linklytics-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          tags: linklytics-web:ci
+          build-args: |
+            NEXT_PUBLIC_API_URL=
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  kind-smoke:
+    name: Kind smoke test (deploy + redirect)
+    runs-on: ubuntu-latest
+    needs: [quality]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: linklytics
+          config: deploy/k8s/kind-config.yaml
+      - name: Build images
+        run: |
+          docker build -f apps/api/Dockerfile -t linklytics-api:local .
+          docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_URL= -t linklytics-web:local .
+      - name: Load images into kind
+        run: |
+          kind load docker-image linklytics-api:local --name linklytics
+          kind load docker-image linklytics-web:local --name linklytics
+      - name: Install ingress-nginx
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller --timeout=240s
+      - name: Deploy overlays/local
+        run: |
+          cp deploy/k8s/overlays/local/secret.example.env deploy/k8s/overlays/local/secret.env
+          kubectl apply -k deploy/k8s/overlays/local
+      - name: Wait for rollouts
+        run: |
+          kubectl -n linklytics rollout status statefulset/postgres --timeout=240s
+          kubectl -n linklytics rollout status deployment/redis --timeout=180s
+          kubectl -n linklytics rollout status deployment/api --timeout=300s
+          kubectl -n linklytics rollout status deployment/web --timeout=180s
+      - name: Smoke test (readiness + redirect through the ingress)
+        run: bash scripts/smoke.sh
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl -n linklytics get pods -o wide || true
+          kubectl -n linklytics describe pods || true
+          kubectl -n linklytics logs -l app.kubernetes.io/name=api --tail=100 || true
