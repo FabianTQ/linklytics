@@ -29,7 +29,7 @@ jobs:
 
       - name: Image metadata (api)
         id: meta-api
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-api
           tags: |
@@ -49,7 +49,7 @@ jobs:
 
       - name: Image metadata (web)
         id: meta-web
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-web
           tags: |
