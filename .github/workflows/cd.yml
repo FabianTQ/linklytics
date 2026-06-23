@@ -18,7 +18,7 @@ jobs:
     name: Build & push images to GHCR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -78,7 +78,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Create release with generated notes
@@ -92,7 +92,7 @@ jobs:
     needs: [publish]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Render prod manifests (validation only — no cluster)
         run: |
           cp deploy/k8s/overlays/prod/secret.example.env deploy/k8s/overlays/prod/secret.env
