@@ -45,10 +45,16 @@ export class ClickRecorderService {
       ipHash = hashIp(context.ip, this.config.get('JWT_SECRET', { infer: true }));
     }
 
+    const occurredAt = new Date();
+    const day = new Date(
+      Date.UTC(occurredAt.getUTCFullYear(), occurredAt.getUTCMonth(), occurredAt.getUTCDate()),
+    );
+
     await this.prisma.$transaction([
       this.prisma.clickEvent.create({
         data: {
           linkId,
+          occurredAt,
           referrer: context.referrer ?? null,
           userAgent: context.userAgent ?? null,
           country,
@@ -59,6 +65,12 @@ export class ClickRecorderService {
       this.prisma.link.update({
         where: { id: linkId },
         data: { clickCount: { increment: 1 } },
+      }),
+      // Incremental daily rollup powering the analytics time series.
+      this.prisma.clickDaily.upsert({
+        where: { linkId_day: { linkId, day } },
+        create: { linkId, day, count: 1 },
+        update: { count: { increment: 1 } },
       }),
     ]);
     this.metrics.clicks.inc();

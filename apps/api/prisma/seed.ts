@@ -40,6 +40,24 @@ async function main(): Promise<void> {
     );
 
     await prisma.clickEvent.createMany({ data: events });
+
+    // Populate the daily rollup the same way the click recorder does at runtime.
+    const byDay = new Map<string, number>();
+    for (const event of events) {
+      const d = event.occurredAt as Date;
+      const day = new Date(
+        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+      ).toISOString();
+      byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    }
+    await prisma.clickDaily.createMany({
+      data: [...byDay.entries()].map(([day, count]) => ({
+        linkId: link.id,
+        day: new Date(day),
+        count,
+      })),
+    });
+
     await prisma.link.update({ where: { id: link.id }, data: { clickCount } });
     console.log(`Seeded ${url} -> /r/${link.slug} (${clickCount} clicks)`);
   }

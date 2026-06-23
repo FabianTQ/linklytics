@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { LinksService } from '../links/links.service';
 
@@ -47,16 +46,18 @@ export class AnalyticsService {
   }
 
   private async timeSeries(linkId: string, since: Date): Promise<TimeSeriesPoint[]> {
-    const rows = await this.prisma.$queryRaw<Array<{ day: Date; count: bigint }>>(Prisma.sql`
-      SELECT date_trunc('day', occurred_at) AS day, count(*)::bigint AS count
-      FROM click_events
-      WHERE link_id = ${linkId}::uuid AND occurred_at >= ${since}
-      GROUP BY day
-      ORDER BY day ASC
-    `);
+    // Cheap indexed read from the daily rollup instead of aggregating the full
+    // click_events table on every request.
+    const sinceDay = new Date(
+      Date.UTC(since.getUTCFullYear(), since.getUTCMonth(), since.getUTCDate()),
+    );
+    const rows = await this.prisma.clickDaily.findMany({
+      where: { linkId, day: { gte: sinceDay } },
+      orderBy: { day: 'asc' },
+    });
     return rows.map((row) => ({
       date: row.day.toISOString().slice(0, 10),
-      count: Number(row.count),
+      count: row.count,
     }));
   }
 

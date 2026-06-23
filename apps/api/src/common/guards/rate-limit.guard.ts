@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
+import { randomBytes } from 'node:crypto';
 import type { Request, Response } from 'express';
 import type { Env } from '../../config/env.validation';
 import { RATE_LIMIT_KEY, RateLimitOptions } from '../decorators/rate-limit.decorator';
@@ -14,11 +15,10 @@ import type { AuthenticatedUser } from '../types/authenticated-user';
 import { RedisService } from '../redis/redis.service';
 
 /**
- * Redis-backed fixed-window rate limiter. Identifies the caller by user id when
- * authenticated, otherwise by client IP (Express `trust proxy` is enabled so
- * this respects `X-Forwarded-For` behind the ingress). Limits for the known
- * buckets (`create`, `redirect`) come from env config; anything else falls back
- * to the decorator's `limit`.
+ * Redis sliding-window rate limiter (sorted set of request timestamps). Unlike a
+ * fixed window it does not allow a burst across the window boundary. Identifies
+ * the caller by user id when authenticated, otherwise by client IP (Express
+ * `trust proxy` is on, so this respects X-Forwarded-For behind the ingress).
  */
 @Injectable()
 export class RateLimitGuard implements CanActivate {
@@ -41,9 +41,22 @@ export class RateLimitGuard implements CanActivate {
     const identifier = request.user?.id ?? request.ip ?? 'anonymous';
     const key = `ratelimit:${options.name}:${identifier}`;
     const limit = this.resolveLimit(options);
+    const windowMs = options.windowSeconds * 1000;
+    const now = Date.now();
+    const member = `${now}-${randomBytes(6).toString('hex')}`;
 
-    const count = await this.redis.incrementWithWindow(key, options.windowSeconds);
+    const results = await this.redis.client
+      .multi()
+      .zremrangebyscore(key, 0, now - windowMs) // drop entries outside the window
+      .zadd(key, now, member)
+      .zcard(key)
+      .pexpire(key, windowMs)
+      .exec();
+    const count = Number(results?.[2]?.[1] ?? 0);
+
     if (count > limit) {
+      // Don't let a rejected request count against the next ones.
+      await this.redis.client.zrem(key, member);
       response.setHeader('Retry-After', String(options.windowSeconds));
       throw new HttpException('Rate limit exceeded, slow down.', HttpStatus.TOO_MANY_REQUESTS);
     }
