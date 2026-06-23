@@ -3,7 +3,7 @@
 # ----------------------------------------------------------------------------
 # Builder — install all deps (incl. dev) and compile the Nest app to dist/.
 # ----------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 RUN npm install -g pnpm@10.34.4
 WORKDIR /app
 ENV CI=true
@@ -22,7 +22,7 @@ RUN pnpm --filter @linklytics/api build
 # Runner — production deps only + compiled output, non-root, self-migrating.
 # node:20-alpine (not distroless) so the entrypoint can run `prisma migrate`.
 # ----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 RUN npm install -g pnpm@10.34.4
 WORKDIR /app
 ENV NODE_ENV=production
