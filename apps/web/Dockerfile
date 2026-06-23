@@ -4,7 +4,7 @@
 # Builder — install deps and produce the Next.js standalone server output.
 # NEXT_PUBLIC_* vars are inlined at build time, so the API origin is a build arg.
 # ----------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 RUN npm install -g pnpm@10.34.4
 WORKDIR /app
 ENV CI=true
@@ -22,7 +22,7 @@ RUN pnpm --filter @linklytics/web build
 # ----------------------------------------------------------------------------
 # Runner — copy only the standalone server + static assets, non-root.
 # ----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
