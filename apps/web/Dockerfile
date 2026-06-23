@@ -5,7 +5,7 @@
 # NEXT_PUBLIC_* vars are inlined at build time, so the API origin is a build arg.
 # ----------------------------------------------------------------------------
 FROM node:20-alpine AS builder
-RUN corepack enable
+RUN npm install -g pnpm@10.34.4
 WORKDIR /app
 ENV CI=true
 ARG NEXT_PUBLIC_API_URL=""
