@@ -1,0 +1,37 @@
+# TLS via cert-manager (documented; requires a cert-manager install + ClusterIssuer).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: linklytics
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - app.linklytics.example
+      secretName: linklytics-tls
+  rules:
+    - host: app.linklytics.example
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3001
+          - path: /r
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 3000

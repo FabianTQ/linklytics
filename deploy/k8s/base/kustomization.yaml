@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Shared, environment-agnostic manifests. Image tags, replica counts, the secret
+# (via secretGenerator) and TLS are set per-environment in the overlays.
+namespace: linklytics
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+  - api-deployment.yaml
+  - api-service.yaml
+  - api-hpa.yaml
+  - web-deployment.yaml
+  - web-service.yaml
+  - ingress.yaml
+  - networkpolicy.yaml

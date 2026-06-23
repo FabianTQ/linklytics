@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linklytics-config
+  labels:
+    app.kubernetes.io/part-of: linklytics
+# Non-sensitive configuration only. Secrets (passwords, JWT secret, DATABASE_URL)
+# come from the Kustomize secretGenerator in each overlay.
+data:
+  NODE_ENV: 'production'
+  API_PORT: '3001'
+  REDIS_URL: 'redis://redis:6379'
+  JWT_EXPIRES_IN: '7d'
+  BCRYPT_COST: '12'
+  COOKIE_NAME: 'linklytics_session'
+  COOKIE_SECURE: 'false'
+  COOKIE_SAMESITE: 'lax'
+  # Served through the ingress on a single host (see ingress.yaml).
+  CORS_ORIGINS: 'http://localhost'
+  SHORT_BASE_URL: 'http://localhost/r'
+  RATE_LIMIT_CREATE_PER_MIN: '20'
+  RATE_LIMIT_REDIRECT_PER_MIN: '120'
+  POSTGRES_USER: 'linklytics'
+  POSTGRES_DB: 'linklytics'

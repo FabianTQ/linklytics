@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linklytics-config
+data:
+  # HTTPS in production — cookies must be Secure.
+  COOKIE_SECURE: 'true'
+  COOKIE_SAMESITE: 'lax'
+  CORS_ORIGINS: 'https://app.linklytics.example'
+  # In production the redirect ideally lives on a separate short domain
+  # (e.g. https://lnk.example/<slug>). Kept on /r here to match the app routes.
+  SHORT_BASE_URL: 'https://lnk.example/r'

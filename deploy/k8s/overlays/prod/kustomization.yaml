@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: linklytics
+
+# Production overlay — DOCUMENTED PLACEHOLDER (no paid cloud cluster is deployed).
+# Replace OWNER with your GitHub org/user; CD (.github/workflows/cd.yml) pushes
+# the images this references to GHCR.
+resources:
+  - ../../base
+
+images:
+  - name: linklytics-api
+    newName: ghcr.io/OWNER/linklytics-api
+    newTag: latest
+  - name: linklytics-web
+    newName: ghcr.io/OWNER/linklytics-web
+    newTag: latest
+
+patches:
+  - path: configmap-patch.yaml
+  - path: ingress-tls-patch.yaml
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+secretGenerator:
+  - name: linklytics-secret
+    envs:
+      - secret.env
+
+generatorOptions:
+  disableNameSuffixHash: true
