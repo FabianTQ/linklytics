@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { RedisModule } from './common/redis/redis.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { AuthModule } from './auth/auth.module';
 import { LinksModule } from './links/links.module';
 import { RedirectModule } from './redirect/redirect.module';
@@ -21,6 +22,7 @@ import { HealthModule } from './health/health.module';
     }),
     PrismaModule,
     RedisModule,
+    MetricsModule,
     AuthModule,
     LinksModule,
     RedirectModule,

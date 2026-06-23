@@ -5,6 +5,7 @@ import type { Env } from '../config/env.validation';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { RedisService } from '../common/redis/redis.service';
 import { hashIp } from '../common/util/hash-ip';
+import { MetricsService } from '../metrics/metrics.service';
 
 export interface ClickContext {
   referrer?: string;
@@ -20,6 +21,7 @@ export class ClickRecorderService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly config: ConfigService<Env, true>,
+    private readonly metrics: MetricsService,
   ) {}
 
   /** Fire-and-forget: never blocks (or fails) the redirect response. */
@@ -59,6 +61,7 @@ export class ClickRecorderService {
         data: { clickCount: { increment: 1 } },
       }),
     ]);
+    this.metrics.clicks.inc();
 
     // Fast click counter in Redis (best-effort; analytics read from Postgres).
     await this.redis.client.incr(`clicks:${linkId}`).catch(() => undefined);
