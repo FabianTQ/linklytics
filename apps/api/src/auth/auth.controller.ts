@@ -1,6 +1,17 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { CookieOptions, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import type { Env } from '../config/env.validation';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -9,6 +20,8 @@ import { durationToMs } from '../common/util/duration';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+
+const REFRESH_PATH = '/api/auth';
 
 @Controller('api/auth')
 export class AuthController {
@@ -23,7 +36,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: AuthenticatedUser }> {
     const user = await this.auth.register(dto);
-    await this.setAuthCookie(res, user);
+    await this.startSession(res, user);
     return { user };
   }
 
@@ -34,14 +47,40 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: AuthenticatedUser }> {
     const user = await this.auth.validateCredentials(dto);
-    await this.setAuthCookie(res, user);
+    await this.startSession(res, user);
+    return { user };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() req: Request & { cookies?: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: AuthenticatedUser }> {
+    const token = req.cookies?.[this.config.get('REFRESH_COOKIE_NAME', { infer: true })];
+    if (!token) {
+      throw new UnauthorizedException('No refresh token');
+    }
+    const { user, refreshToken } = await this.auth.rotateRefreshToken(token);
+    this.setAccessCookie(res, await this.auth.issueAccessToken(user));
+    this.setRefreshCookie(res, refreshToken);
     return { user };
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Res({ passthrough: true }) res: Response): { success: true } {
-    res.clearCookie(this.config.get('COOKIE_NAME', { infer: true }), this.cookieBaseOptions());
+  async logout(
+    @Req() req: Request & { cookies?: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ success: true }> {
+    await this.auth.revokeRefreshToken(
+      req.cookies?.[this.config.get('REFRESH_COOKIE_NAME', { infer: true })],
+    );
+    res.clearCookie(this.config.get('COOKIE_NAME', { infer: true }), this.cookieBase('/'));
+    res.clearCookie(
+      this.config.get('REFRESH_COOKIE_NAME', { infer: true }),
+      this.cookieBase(REFRESH_PATH),
+    );
     return { success: true };
   }
 
@@ -51,20 +90,32 @@ export class AuthController {
     return { user };
   }
 
-  private async setAuthCookie(res: Response, user: AuthenticatedUser): Promise<void> {
-    const token = await this.auth.issueToken(user);
+  private async startSession(res: Response, user: AuthenticatedUser): Promise<void> {
+    this.setAccessCookie(res, await this.auth.issueAccessToken(user));
+    this.setRefreshCookie(res, await this.auth.issueRefreshToken(user.id));
+  }
+
+  private setAccessCookie(res: Response, token: string): void {
     res.cookie(this.config.get('COOKIE_NAME', { infer: true }), token, {
-      ...this.cookieBaseOptions(),
+      ...this.cookieBase('/'),
       maxAge: durationToMs(this.config.get('JWT_EXPIRES_IN', { infer: true })),
     });
   }
 
-  private cookieBaseOptions(): CookieOptions {
+  private setRefreshCookie(res: Response, token: string): void {
+    const days = this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true });
+    res.cookie(this.config.get('REFRESH_COOKIE_NAME', { infer: true }), token, {
+      ...this.cookieBase(REFRESH_PATH),
+      maxAge: days * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  private cookieBase(path: string): CookieOptions {
     return {
       httpOnly: true,
       secure: this.config.get('COOKIE_SECURE', { infer: true }),
       sameSite: this.config.get('COOKIE_SAMESITE', { infer: true }),
-      path: '/',
+      path,
     };
   }
 }

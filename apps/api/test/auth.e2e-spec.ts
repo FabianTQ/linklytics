@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createTestApp, flushRedis, resetDatabase } from './test-app';
+import { authedAgent, createTestApp, flushRedis, resetDatabase } from './test-app';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -78,5 +78,16 @@ describe('Auth (e2e)', () => {
     await agent.get('/api/auth/me').expect(200);
     await agent.post('/api/auth/logout').expect(200);
     await agent.get('/api/auth/me').expect(401);
+  });
+
+  it('refreshes the session with a rotated token', async () => {
+    const agent = await authedAgent(app);
+    const res = await agent.post('/api/auth/refresh').expect(200);
+    expect(res.body.user.email).toBe('user@example.com');
+    await agent.get('/api/auth/me').expect(200);
+  });
+
+  it('rejects refresh without a token (401)', async () => {
+    await request(app.getHttpServer()).post('/api/auth/refresh').expect(401);
   });
 });

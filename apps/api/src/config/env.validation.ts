@@ -18,10 +18,13 @@ export const envSchema = z.object({
   REDIS_URL: z.string().url(),
 
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  // Short-lived access token; sessions are kept alive by the rotated refresh token.
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
 
   COOKIE_NAME: z.string().default('linklytics_session'),
+  REFRESH_COOKIE_NAME: z.string().default('linklytics_refresh'),
   COOKIE_SECURE: booleanish.default(false),
   COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
 

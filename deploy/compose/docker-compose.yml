@@ -45,7 +45,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-linklytics}:${POSTGRES_PASSWORD:-linklytics}@postgres:5432/${POSTGRES_DB:-linklytics}?schema=public
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me_at_least_32_chars_long}
-      JWT_EXPIRES_IN: 7d
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_TTL_DAYS: 7
       BCRYPT_COST: 12
       COOKIE_NAME: linklytics_session
       COOKIE_SECURE: 'false'

@@ -25,6 +25,8 @@ export default async function globalSetup(): Promise<void> {
   process.env.JWT_EXPIRES_IN ??= '7d';
   process.env.BCRYPT_COST ??= '6'; // cheaper hashing keeps the suite fast
   process.env.COOKIE_NAME ??= 'linklytics_session';
+  process.env.REFRESH_COOKIE_NAME ??= 'linklytics_refresh';
+  process.env.REFRESH_TOKEN_TTL_DAYS ??= '7';
   process.env.CORS_ORIGINS ??= 'http://localhost:3000';
   process.env.SHORT_BASE_URL ??= 'http://localhost:3001/r';
   process.env.RATE_LIMIT_CREATE_PER_MIN ??= '20';

@@ -11,13 +11,24 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function apiFetch<T>(path: string, init?: RequestInit, allowRefresh = true): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: 'include',
     cache: 'no-store',
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
   });
+
+  // Transparently refresh an expired access token once, then retry.
+  if (res.status === 401 && allowRefresh && !path.startsWith('/api/auth/')) {
+    const refreshed = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (refreshed.ok) {
+      return apiFetch<T>(path, init, false);
+    }
+  }
 
   if (!res.ok) {
     let message = res.statusText;
