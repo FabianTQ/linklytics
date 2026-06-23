@@ -9,11 +9,11 @@
 Create short links, share them, and watch the clicks roll in — time series, top
 referrers and geography per link.
 
-<!-- Screenshots: add real captures/GIFs here. -->
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
-<!-- ![Analytics](docs/screenshots/analytics.png) -->
+![Dashboard — create links and track clicks](docs/screenshots/dashboard.png)
 
-> 📸 _Screenshots / GIF placeholders — drop captures into `docs/screenshots/`._
+![Per-link analytics — clicks over time, referrers, geography](docs/screenshots/analytics.png)
+
+<sub>Regenerate with the stack running + demo data seeded: `node apps/web/scripts/capture-screenshots.mjs`.</sub>
 
 ---
 
@@ -40,7 +40,8 @@ referrers and geography per link.
   fallback, records a click asynchronously, and returns `302`.
 - **Analytics** — clicks over time, top referrers, and geography (offline IP→geo).
 - **Ops** — `/healthz` liveness, `/readyz` readiness (checks Postgres + Redis),
-  Helmet, CORS whitelist, Redis-backed rate limiting on create + redirect.
+  Prometheus `/metrics`, Helmet, CORS whitelist, Redis-backed rate limiting on
+  create + redirect.
 
 ## Architecture
 
@@ -195,6 +196,24 @@ make test         # lint + typecheck + API tests + web e2e (brings the stack up)
   the `TEST_DATABASE_URL` / `TEST_REDIS_URL` override — one harness, two paths.
 - **Web** — a Playwright e2e drives the critical flow: register → create a link
   → see it listed → open its analytics.
+
+## Observability
+
+The API exposes Prometheus metrics at `/metrics`: default Node/process metrics, a
+request-latency histogram (`http_request_duration_seconds`), and domain counters
+(`linklytics_redirects_total{result}`, `linklytics_clicks_recorded_total`). One
+command brings up the stack wired to Prometheus + Grafana with a provisioned
+dashboard:
+
+```bash
+make obs-up        # or: pnpm compose:obs
+```
+
+- Grafana — <http://localhost:3002> (admin / admin), the "Linklytics overview" dashboard
+- Prometheus — <http://localhost:9090>
+
+In Kubernetes the metrics are scraped in-cluster (the endpoint is not exposed
+through the ingress).
 
 ## CI/CD overview
 

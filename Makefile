@@ -23,6 +23,10 @@ down: ## Stop the stack and remove volumes
 logs: ## Tail stack logs
 	$(COMPOSE) logs -f
 
+obs-up: ## Start the stack + Prometheus + Grafana (http://localhost:3002, admin/admin)
+	$(COMPOSE) -f deploy/compose/docker-compose.observability.yml up --build -d
+	@echo "Grafana -> http://localhost:3002 (admin/admin)   Prometheus -> http://localhost:9090"
+
 ps: ## Show stack status
 	$(COMPOSE) ps
 
