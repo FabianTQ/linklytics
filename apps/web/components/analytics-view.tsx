@@ -61,20 +61,29 @@ export function AnalyticsView({ data }: { data: LinkAnalytics }): React.ReactEle
           {data.timeSeries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No clicks recorded yet.</p>
           ) : (
-            <div className="flex h-40 items-end gap-1">
-              {data.timeSeries.map((point) => (
-                <div
-                  key={point.date}
-                  className="flex flex-1 flex-col items-center gap-1"
-                  title={`${point.date}: ${point.count}`}
-                >
+            <div>
+              {/* Bars are direct children of the fixed-height row so their
+                  percentage heights resolve against it; labels sit below. */}
+              <div className="flex h-40 items-end gap-1">
+                {data.timeSeries.map((point) => (
                   <div
-                    className="w-full rounded-t bg-primary"
-                    style={{ height: `${(point.count / max) * 100}%` }}
+                    key={point.date}
+                    className="flex-1 rounded-t bg-primary"
+                    style={{ height: `${Math.max((point.count / max) * 100, 2)}%` }}
+                    title={`${point.date}: ${point.count}`}
                   />
-                  <span className="text-[10px] text-muted-foreground">{point.date.slice(5)}</span>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="mt-1 flex gap-1">
+                {data.timeSeries.map((point) => (
+                  <span
+                    key={point.date}
+                    className="flex-1 text-center text-[10px] text-muted-foreground"
+                  >
+                    {point.date.slice(5)}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
