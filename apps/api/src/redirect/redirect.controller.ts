@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  GoneException,
   HttpStatus,
   NotFoundException,
   Param,
@@ -32,6 +33,12 @@ export class RedirectController {
     const resolved = await this.redirect.resolve(slug);
     if (!resolved) {
       throw new NotFoundException('Short link not found');
+    }
+
+    const expired =
+      resolved.expiresAt !== null && new Date(resolved.expiresAt).getTime() <= Date.now();
+    if (!resolved.isActive || expired) {
+      throw new GoneException('This short link is no longer available');
     }
 
     this.clicks.record(resolved.linkId, {

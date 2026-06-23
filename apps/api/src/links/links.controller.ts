@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -18,7 +19,7 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { UpdateLinkDto } from './dto/update-link.dto';
-import { LinksService, type LinkView } from './links.service';
+import { LinksService, type LinkView, type PaginatedLinks } from './links.service';
 
 @Controller('api/links')
 @UseGuards(JwtAuthGuard)
@@ -33,8 +34,17 @@ export class LinksController {
   }
 
   @Get()
-  list(@CurrentUser() user: AuthenticatedUser): Promise<LinkView[]> {
-    return this.links.findAllForUser(user.id);
+  list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+  ): Promise<PaginatedLinks> {
+    return this.links.findAllForUser(user.id, {
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+      q,
+    });
   }
 
   @Get(':id')

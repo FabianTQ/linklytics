@@ -9,8 +9,17 @@ export interface LinkView {
   originalUrl: string;
   shortUrl: string;
   clickCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PaginatedLinks {
+  items: LinkView[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface TimeSeriesPoint {

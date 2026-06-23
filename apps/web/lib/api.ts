@@ -1,5 +1,5 @@
 import { API_BASE_URL } from './constants';
-import type { LinkAnalytics, LinkView, User } from './types';
+import type { LinkAnalytics, LinkView, PaginatedLinks, User } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -35,6 +35,24 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export interface CreateLinkInput {
+  originalUrl: string;
+  customSlug?: string;
+  expiresAt?: string;
+}
+
+export interface UpdateLinkInput {
+  originalUrl?: string;
+  isActive?: boolean;
+  expiresAt?: string | null;
+}
+
+export interface ListLinksParams {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+}
+
 export const api = {
   register: (email: string, password: string): Promise<{ user: User }> =>
     apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -46,10 +64,20 @@ export const api = {
 
   me: (): Promise<{ user: User }> => apiFetch('/api/auth/me'),
 
-  listLinks: (): Promise<LinkView[]> => apiFetch('/api/links'),
+  listLinks: (params: ListLinksParams = {}): Promise<PaginatedLinks> => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set('page', String(params.page));
+    if (params.pageSize) qs.set('pageSize', String(params.pageSize));
+    if (params.q) qs.set('q', params.q);
+    const query = qs.toString();
+    return apiFetch(`/api/links${query ? `?${query}` : ''}`);
+  },
 
-  createLink: (originalUrl: string): Promise<LinkView> =>
-    apiFetch('/api/links', { method: 'POST', body: JSON.stringify({ originalUrl }) }),
+  createLink: (input: CreateLinkInput): Promise<LinkView> =>
+    apiFetch('/api/links', { method: 'POST', body: JSON.stringify(input) }),
+
+  updateLink: (id: string, patch: UpdateLinkInput): Promise<LinkView> =>
+    apiFetch(`/api/links/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   deleteLink: (id: string): Promise<void> => apiFetch(`/api/links/${id}`, { method: 'DELETE' }),
 

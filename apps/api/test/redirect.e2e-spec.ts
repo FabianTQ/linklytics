@@ -46,6 +46,26 @@ describe('Redirect (e2e)', () => {
     await request(app.getHttpServer()).get('/r/zzzzzzz').expect(404);
   });
 
+  it('410s for a deactivated link', async () => {
+    const agent = await authedAgent(app);
+    const link = await agent
+      .post('/api/links')
+      .send({ originalUrl: 'https://t.com/x' })
+      .expect(201);
+    await agent.patch(`/api/links/${link.body.id}`).send({ isActive: false }).expect(200);
+    await request(app.getHttpServer()).get(`/r/${link.body.slug}`).expect(410);
+  });
+
+  it('410s for an expired link', async () => {
+    const agent = await authedAgent(app);
+    const past = new Date(Date.now() - 60_000).toISOString();
+    const link = await agent
+      .post('/api/links')
+      .send({ originalUrl: 'https://t.com/exp', expiresAt: past })
+      .expect(201);
+    await request(app.getHttpServer()).get(`/r/${link.body.slug}`).expect(410);
+  });
+
   it('records a click asynchronously (referrer + counter)', async () => {
     const link = await createLink('https://target.com/track');
     await request(app.getHttpServer())

@@ -1,6 +1,6 @@
 // Linklytics data model.
-// Three tables: users, links, click_events. Click events are append-only and
-// drive the analytics aggregations (time series, referrers, geo).
+// users, links, click_events (append-only), click_daily (time-series rollup),
+// refresh_tokens (rotated refresh-token store).
 
 generator client {
   provider = "prisma-client-js"
@@ -18,22 +18,26 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  links Link[]
+  links         Link[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
 
 model Link {
-  id          String   @id @default(uuid()) @db.Uuid
-  slug        String   @unique
-  originalUrl String   @map("original_url")
-  userId      String   @map("user_id") @db.Uuid
-  clickCount  Int      @default(0) @map("click_count")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  slug        String    @unique
+  originalUrl String    @map("original_url")
+  userId      String    @map("user_id") @db.Uuid
+  clickCount  Int       @default(0) @map("click_count")
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   clickEvents ClickEvent[]
+  dailyClicks ClickDaily[]
 
   @@index([userId])
   @@map("links")
@@ -55,4 +59,33 @@ model ClickEvent {
   @@index([linkId])
   @@index([occurredAt])
   @@map("click_events")
+}
+
+// Incremental daily rollup so the analytics time series is a cheap indexed read
+// instead of aggregating the full click_events table on every request.
+model ClickDaily {
+  linkId String   @map("link_id") @db.Uuid
+  day    DateTime @db.Date
+  count  Int      @default(0)
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@id([linkId, day])
+  @@map("click_daily")
+}
+
+// Opaque, rotated refresh tokens. Only a hash is stored; rotation revokes the
+// previous token on every refresh.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
