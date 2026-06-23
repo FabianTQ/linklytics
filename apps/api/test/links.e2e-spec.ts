@@ -74,7 +74,10 @@ describe('Links (e2e)', () => {
     const aliceLink = await alice.post('/api/links').send({ originalUrl: 'https://secret.com' });
 
     await bob.get(`/api/links/${aliceLink.body.id}`).expect(404);
-    await bob.patch(`/api/links/${aliceLink.body.id}`).send({ originalUrl: 'https://x.com' }).expect(404);
+    await bob
+      .patch(`/api/links/${aliceLink.body.id}`)
+      .send({ originalUrl: 'https://x.com' })
+      .expect(404);
     await bob.delete(`/api/links/${aliceLink.body.id}`).expect(404);
   });
 });

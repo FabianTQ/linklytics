@@ -30,12 +30,14 @@ async function main(): Promise<void> {
     });
 
     const clickCount = 20 + Math.floor(Math.random() * 60);
-    const events: Prisma.ClickEventCreateManyInput[] = Array.from({ length: clickCount }).map(() => ({
-      linkId: link.id,
-      occurredAt: new Date(Date.now() - Math.floor(Math.random() * 14) * 24 * 60 * 60 * 1000),
-      referrer: referrers[Math.floor(Math.random() * referrers.length)],
-      country: countries[Math.floor(Math.random() * countries.length)],
-    }));
+    const events: Prisma.ClickEventCreateManyInput[] = Array.from({ length: clickCount }).map(
+      () => ({
+        linkId: link.id,
+        occurredAt: new Date(Date.now() - Math.floor(Math.random() * 14) * 24 * 60 * 60 * 1000),
+        referrer: referrers[Math.floor(Math.random() * referrers.length)],
+        country: countries[Math.floor(Math.random() * countries.length)],
+      }),
+    );
 
     await prisma.clickEvent.createMany({ data: events });
     await prisma.link.update({ where: { id: link.id }, data: { clickCount } });

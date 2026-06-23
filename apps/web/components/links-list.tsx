@@ -75,9 +75,7 @@ function LinkRow({
         <p className="truncate text-sm text-muted-foreground">{link.originalUrl}</p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {link.clickCount} clicks
-        </span>
+        <span className="text-sm tabular-nums text-muted-foreground">{link.clickCount} clicks</span>
         <Button variant="outline" size="sm" onClick={onCopy}>
           {copied ? 'Copied!' : 'Copy'}
         </Button>

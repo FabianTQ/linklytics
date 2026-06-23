@@ -36,8 +36,11 @@ if (clusterExists()) {
 console.log('\n== Installing ingress-nginx ==');
 run('kubectl', ['apply', '-f', INGRESS_MANIFEST]);
 run('kubectl', [
-  'wait', '--namespace', 'ingress-nginx',
-  '--for=condition=ready', 'pod',
+  'wait',
+  '--namespace',
+  'ingress-nginx',
+  '--for=condition=ready',
+  'pod',
   '--selector=app.kubernetes.io/component=controller',
   '--timeout=180s',
 ]);
@@ -46,9 +49,14 @@ console.log('\n== Building images ==');
 run('docker', ['build', '-f', 'apps/api/Dockerfile', '-t', 'linklytics-api:local', '.']);
 // Same-origin client calls via the ingress => empty NEXT_PUBLIC_API_URL.
 run('docker', [
-  'build', '-f', 'apps/web/Dockerfile',
-  '--build-arg', 'NEXT_PUBLIC_API_URL=',
-  '-t', 'linklytics-web:local', '.',
+  'build',
+  '-f',
+  'apps/web/Dockerfile',
+  '--build-arg',
+  'NEXT_PUBLIC_API_URL=',
+  '-t',
+  'linklytics-web:local',
+  '.',
 ]);
 
 console.log('\n== Loading images into kind ==');

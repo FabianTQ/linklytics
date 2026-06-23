@@ -1,6 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { authedAgent, createTestApp, flushRedis, getPrisma, resetDatabase, waitFor } from './test-app';
+import {
+  authedAgent,
+  createTestApp,
+  flushRedis,
+  getPrisma,
+  resetDatabase,
+  waitFor,
+} from './test-app';
 
 describe('Analytics (e2e)', () => {
   let app: INestApplication;

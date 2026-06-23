@@ -23,7 +23,10 @@ describe('Rate limiting (e2e)', () => {
   it(`429s once the create limit (${CREATE_LIMIT}/min) is exceeded`, async () => {
     const agent = await authedAgent(app);
     for (let i = 0; i < CREATE_LIMIT; i += 1) {
-      await agent.post('/api/links').send({ originalUrl: `https://e.com/${i}` }).expect(201);
+      await agent
+        .post('/api/links')
+        .send({ originalUrl: `https://e.com/${i}` })
+        .expect(201);
     }
     await agent.post('/api/links').send({ originalUrl: 'https://e.com/overflow' }).expect(429);
   });
