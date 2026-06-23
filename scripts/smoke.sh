@@ -10,6 +10,19 @@ EMAIL="smoke_$$_$RANDOM@example.com"
 
 fail() { echo "SMOKE FAILED: $1" >&2; exit 1; }
 
+# Pre-flight: the ingress can report the web up a beat before it finishes
+# syncing the api Service endpoints (first /api call would 503). Wait until both
+# the web (200) and the api (/api/auth/me -> 401, i.e. reachable) are routing.
+echo "0/5 waiting for the ingress to route web + api"
+ready=0
+for _ in $(seq 1 60); do
+  w="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/" || echo 000)"
+  a="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/auth/me" || echo 000)"
+  if [ "$w" = "200" ] && { [ "$a" = "401" ] || [ "$a" = "200" ]; }; then ready=1; break; fi
+  sleep 2
+done
+[ "$ready" = "1" ] || fail "ingress not routing (web=$w api=$a)"
+
 echo "1/5 web / returns 200"
 code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")"
 [ "$code" = "200" ] || fail "web / expected 200, got $code"
