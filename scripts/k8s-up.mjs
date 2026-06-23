@@ -16,6 +16,25 @@ function run(cmd, args, opts = {}) {
   execFileSync(cmd, args, { stdio: 'inherit', cwd: ROOT, shell: false, ...opts });
 }
 
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+// Retry a command — used for the apply, since the ingress-nginx admission
+// webhook can briefly refuse connections even after the controller is Ready.
+function runWithRetry(cmd, args, attempts = 12, delayMs = 10_000) {
+  for (let i = 1; ; i += 1) {
+    try {
+      run(cmd, args);
+      return;
+    } catch (error) {
+      if (i >= attempts) throw error;
+      console.log(`  attempt ${i} failed, retrying in ${delayMs / 1000}s...`);
+      sleepSync(delayMs);
+    }
+  }
+}
+
 function clusterExists() {
   try {
     return execFileSync('kind', ['get', 'clusters'], { cwd: ROOT })
@@ -70,7 +89,7 @@ if (!existsSync(secretEnv)) {
 }
 
 console.log('\n== Deploying overlays/local ==');
-run('kubectl', ['apply', '-k', 'deploy/k8s/overlays/local']);
+runWithRetry('kubectl', ['apply', '-k', 'deploy/k8s/overlays/local']);
 
 console.log('\n== Waiting for rollouts ==');
 run('kubectl', ['-n', CLUSTER, 'rollout', 'status', 'statefulset/postgres', '--timeout=180s']);

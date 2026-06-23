@@ -153,7 +153,15 @@ jobs:
       - name: Deploy overlays/local
         run: |
           cp deploy/k8s/overlays/local/secret.example.env deploy/k8s/overlays/local/secret.env
-          kubectl apply -k deploy/k8s/overlays/local
+          # The ingress-nginx admission webhook can briefly refuse connections
+          # even after the controller pod is Ready; retry until it accepts.
+          n=0
+          until kubectl apply -k deploy/k8s/overlays/local; do
+            n=$((n + 1))
+            if [ "$n" -ge 12 ]; then echo "apply failed after $n attempts"; exit 1; fi
+            echo "apply failed (ingress webhook warming up?), retry $n in 10s..."
+            sleep 10
+          done
       - name: Wait for rollouts
         run: |
           kubectl -n linklytics rollout status statefulset/postgres --timeout=240s
