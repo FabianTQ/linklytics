@@ -16,12 +16,12 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts",
+    "db:seed": "ts-node prisma/seed.ts",
     "clean": "rimraf dist coverage .tsbuildinfo",
     "postinstall": "prisma generate"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
