@@ -1,0 +1,23 @@
+# Prometheus Operator scrape config for the API. Requires the Operator CRDs
+# (e.g. kube-prometheus-stack) — it is intentionally NOT part of overlays/local
+# because kind has no operator installed. Apply it on a cluster that does:
+#   kubectl apply -f deploy/k8s/monitoring/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: linklytics-api
+  namespace: linklytics
+  labels:
+    app.kubernetes.io/part-of: linklytics
+    # Match your operator's serviceMonitorSelector (kube-prometheus-stack default).
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  namespaceSelector:
+    matchNames: ['linklytics']
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

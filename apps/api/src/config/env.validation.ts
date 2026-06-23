@@ -33,6 +33,9 @@ export const envSchema = z.object({
 
   RATE_LIMIT_CREATE_PER_MIN: z.coerce.number().int().positive().default(20),
   RATE_LIMIT_REDIRECT_PER_MIN: z.coerce.number().int().positive().default(120),
+
+  // When set, /metrics requires `Authorization: Bearer <token>` (or ?token=).
+  METRICS_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

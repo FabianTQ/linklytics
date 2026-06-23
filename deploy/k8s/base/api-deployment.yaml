@@ -15,6 +15,10 @@ spec:
       labels:
         app.kubernetes.io/name: api
         app.kubernetes.io/part-of: linklytics
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3001'
+        prometheus.io/path: /metrics
     spec:
       securityContext:
         runAsNonRoot: true
