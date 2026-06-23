@@ -1,6 +1,6 @@
 {
   "name": "linklytics",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Self-hostable URL shortener with click analytics. Monorepo: Next.js web + NestJS API, Postgres + Redis, Docker, Kubernetes (kind), CI/CD.",
   "license": "MIT",

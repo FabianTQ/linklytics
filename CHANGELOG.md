@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/FabianTQ/linklytics/compare/v0.2.0...v0.3.0) (2026-06-23)
+
+
+### Features
+
+* **api:** sliding-window rate limit + daily analytics rollup ([454e32a](https://github.com/FabianTQ/linklytics/commit/454e32a32057f8b969198d2b15ef5c1154968ef8))
+* **auth:** short-lived access token + rotating refresh tokens ([512ea6e](https://github.com/FabianTQ/linklytics/commit/512ea6ecdd7a352714e5f63f30863dfda74206b9))
+* branded slugs, link expiry/active, pagination, search, QR codes ([27d7e5f](https://github.com/FabianTQ/linklytics/commit/27d7e5fbadbb98d72f6bc22511ed1e3e8687cc8b))
+* k8s metrics scraping, /metrics auth, structured logging ([4afaa9c](https://github.com/FabianTQ/linklytics/commit/4afaa9c4709acd5b21619d9452dede7d5359a5c4))
+
+
+### Bug Fixes
+
+* **docker:** install pnpm via npm instead of corepack ([d3250e4](https://github.com/FabianTQ/linklytics/commit/d3250e43508c7feb3d5f6b25931b30b0ca25009c))
+
 ## [0.2.0](https://github.com/FabianTQ/linklytics/compare/v0.1.0...v0.2.0) (2026-06-23)
 
 ### Features
