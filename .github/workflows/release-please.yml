@@ -1,0 +1,20 @@
+name: release-please
+
+# Conventional-Commit driven releases: opens/maintains a release PR that bumps
+# the version and CHANGELOG; merging it tags `v<version>`, which cd.yml then
+# publishes to GHCR.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
