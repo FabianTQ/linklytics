@@ -24,6 +24,8 @@ test('register, create a link, and view its analytics', async ({ page }) => {
   await expect(row).toContainText('https://example.com/playwright');
 
   await row.getByRole('link', { name: 'Analytics' }).click();
-  await expect(page.getByRole('heading', { name: 'Clicks over time' })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard\/[0-9a-f-]+$/);
+  // CardTitle renders a <div>, so assert by text rather than heading role.
+  await expect(page.getByText('Clicks over time')).toBeVisible();
   await expect(page.getByText('Total clicks')).toBeVisible();
 });

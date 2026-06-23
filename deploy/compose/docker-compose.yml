@@ -1,0 +1,81 @@
+name: linklytics
+
+# Full local stack: postgres + redis + api + web, built from the production
+# Dockerfiles. One command (`make up` / `pnpm compose:up`) brings it all online.
+# The API self-applies migrations on startup (see apps/api/docker-entrypoint.sh).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-linklytics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linklytics}
+      POSTGRES_DB: ${POSTGRES_DB:-linklytics}
+    ports:
+      - '${POSTGRES_HOST_PORT:-5434}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-linklytics} -d ${POSTGRES_DB:-linklytics}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_HOST_PORT:-6380}:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-linklytics}:${POSTGRES_PASSWORD:-linklytics}@postgres:5432/${POSTGRES_DB:-linklytics}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me_at_least_32_chars_long}
+      JWT_EXPIRES_IN: 7d
+      BCRYPT_COST: 12
+      COOKIE_NAME: linklytics_session
+      COOKIE_SECURE: 'false'
+      COOKIE_SAMESITE: lax
+      CORS_ORIGINS: http://localhost:3000
+      SHORT_BASE_URL: http://localhost:3001/r
+      RATE_LIMIT_CREATE_PER_MIN: 20
+      RATE_LIMIT_REDIRECT_PER_MIN: 120
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Browser-visible API origin for the compose stack.
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:

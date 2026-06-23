@@ -1,0 +1,19 @@
+# Build context is the monorepo root for both image builds.
+**/node_modules
+**/dist
+**/.next
+**/out
+**/coverage
+**/.turbo
+**/test-results
+**/playwright-report
+**/blob-report
+**/.tsbuildinfo
+**/*.tsbuildinfo
+.git
+.github
+deploy/k8s
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log

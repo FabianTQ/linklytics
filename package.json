@@ -15,6 +15,12 @@
     "test": "pnpm -r test",
     "format": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
+    "compose:up": "docker compose -f deploy/compose/docker-compose.yml up --build -d",
+    "compose:down": "docker compose -f deploy/compose/docker-compose.yml down -v",
+    "compose:logs": "docker compose -f deploy/compose/docker-compose.yml logs -f",
+    "compose:build": "docker compose -f deploy/compose/docker-compose.yml build",
+    "k8s:up": "node scripts/k8s-up.mjs",
+    "k8s:down": "node scripts/k8s-down.mjs",
     "clean": "pnpm -r clean"
   },
   "devDependencies": {
