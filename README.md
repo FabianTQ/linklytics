@@ -33,15 +33,19 @@ referrers and geography per link.
 
 ## Features
 
-- **Auth** — register / login / logout / me, bcrypt (cost 12), JWT in an
-  httpOnly `SameSite=Lax` cookie, route guard.
-- **Links** — owner-scoped CRUD, collision-safe slug generation, copy-to-clipboard.
+- **Auth** — register / login / logout / me; bcrypt (cost 12); short-lived
+  access JWT in an httpOnly `SameSite=Lax` cookie + **rotating refresh tokens**.
+- **Links** — owner-scoped CRUD, collision-safe **or branded (custom) slugs**,
+  **expiry + active toggle**, **pagination & search**, **QR codes**,
+  copy-to-clipboard.
 - **Redirects** — `GET /r/:slug` resolves via Redis (cache) with a Postgres
-  fallback, records a click asynchronously, and returns `302`.
-- **Analytics** — clicks over time, top referrers, and geography (offline IP→geo).
-- **Ops** — `/healthz` liveness, `/readyz` readiness (checks Postgres + Redis),
-  Prometheus `/metrics`, Helmet, CORS whitelist, Redis-backed rate limiting on
-  create + redirect.
+  fallback, records a click asynchronously, returns `302` (or `410 Gone` when
+  inactive/expired).
+- **Analytics** — clicks over time (**daily rollup**), top referrers, geography
+  (offline IP→geo).
+- **Ops** — `/healthz` / `/readyz`, Prometheus `/metrics` (optional bearer auth),
+  **structured logging** (pino + `x-request-id`), Helmet, CORS whitelist,
+  **Redis sliding-window rate limiting** on create + redirect.
 
 ## Architecture
 
