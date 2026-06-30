@@ -26,15 +26,15 @@
     "@radix-ui/react-slot": "^1.1.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20.17.12",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.5.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.1.6",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.16",
     "rimraf": "^5.0.10",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
